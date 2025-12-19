@@ -115,8 +115,11 @@ class Transaction:
         """Calculate fine for overdue books"""
         if self.is_overdue():
             days_overdue = (datetime.now().date() - self.due_date.date()).days
-            return days_overdue * 2.00  # $2 per day
-        return 0.00
+            self.fine_amount = days_overdue * 2.00  # $2 per day
+            return self.fine_amount
+        else:
+            self.fine_amount = 0.00  # ← SETS to 0 if not overdue
+            return 0.00
 
     def mark_returned(self):
         """Mark a borrow transaction as returned (only for borrow transactions)"""
@@ -125,21 +128,38 @@ class Transaction:
             self.status = 'completed'
 
             # Calculate fine if overdue
-            if self.is_overdue():
-                self.fine_amount = self.calculate_fine()
+            if self.due_date and datetime.now() > self.due_date:
+                days_overdue = (datetime.now().date() -
+                                self.due_date.date()).days
+                self.fine_amount = days_overdue * 2.00
 
             return True
         return False  # Cannot mark return transactions as returned
 
     def pay_fine(self, amount_paid):
-        """Mark fine as paid"""
-        if amount_paid >= self.fine_amount:
-            self.fine_paid = True
-            return True
-        elif amount_paid > 0:
-            self.fine_amount -= amount_paid
-            return True
-        return False
+        # Step 1: Check if payment is valid
+        if amount_paid <= 0:
+            return False  # ❌ Invalid: Can't pay $0 or negative amount
+
+        # Check if already paid
+        if self.fine_paid:
+            print("⚠️ Fine already paid! No payment needed.")
+            return False
+
+        # Step 2: Deduct payment from fine
+        self.fine_amount -= amount_paid
+        # print(f"Remaining fine is: {self.fine_amount}")
+
+        # Step 3: Check if fine is fully paid
+        if self.fine_amount <= 0:
+            self.fine_amount = 0.00   # Reset to zero (no negative balance)
+            self.fine_paid = True     # Mark as fully paid
+
+        return True  # Step 4: Return success
+
+    def get_remaining_fine(self):
+        """Get remaining fine amount"""
+        return self.fine_amount
 
     def get_transaction_info(self):
         """Get formatted transaction information"""
@@ -181,13 +201,25 @@ def test_models():
 
     # Test Book
     book = Book("123", "Test Book", "Author", 2023, 2)
-    print(f"✅ Book available: {book.is_available()}")
+    print(
+        f"✅ Book available: {book.is_available()} and available copies: {book.available_copies}")
+    book.borrow_copy()
+    print(f"Available book : {book.available_copies}")
+    book.return_copy()
+    print(f"Now Total Available book : {book.available_copies}")
 
     # Test Transaction
     transaction = Transaction(1, 101, "123", "borrow")
     print(f"✅ Transaction type: {transaction.transaction_type}")
     print(f"✅ Due date: {transaction.due_date}")
     print(f"✅ Is overdue: {transaction.is_overdue()}")
+    transaction.due_date = datetime(2025, 1, 1)
+    print(f"✅Now overdue is: {transaction.is_overdue()}")
+    print(f"✅ Total fine is : {transaction.calculate_fine()}")
+    transaction.pay_fine(100)
+    print(transaction.get_remaining_fine())
+    transaction.mark_returned()
+    print(transaction.status)
 
     # Test return transaction
     return_transaction = Transaction(2, 101, "123", "return")
