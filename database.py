@@ -33,9 +33,9 @@ class DatabaseManager:
     def execute_query(self, query, params=None, fetch=False):
         """
         Execute a SQL query
-        - query: SQL string
-        - params: Tuple of parameters for the query
-        - fetch: If True, returns results. If False, returns last inserted ID
+        - query: SQL string  (e.g., "SELECT * FROM users")
+        - params: Tuple of parameters for the query (e.g., ("John", "john@email.com"))
+        - fetch: If True, returns results. If False, returns last inserted ID ;True for SELECT (get data), False for INSERT/UPDATE/DELETE (change data)
         """
         try:
             # Get results as dictionaries
