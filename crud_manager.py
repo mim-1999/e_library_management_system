@@ -2,7 +2,7 @@
 from database import DatabaseManager
 from models import Book, User, Admin
 from datetime import datetime
-# Using bcrypt library (recommended)
+# Using bcrypt library
 import bcrypt
 
 
