@@ -86,7 +86,7 @@ class Transaction:
         # Timestamp - when transaction occurred
         self.transaction_date = datetime.now()
 
-        # Due date logic - only for borrow transactions
+        # Due date logic - only for borrow transactions ; BORROW transaction - starts as active
         if transaction_type == 'borrow':
             self.due_date = self.transaction_date + \
                 timedelta(days=14)  # 2 weeks
@@ -121,20 +121,48 @@ class Transaction:
             self.fine_amount = 0.00  # ← SETS to 0 if not overdue
             return 0.00
 
+    # commenting this method that may change later
+    # def mark_returned(self):
+    #     """Mark a borrow transaction as returned (only for borrow transactions)"""
+    #     if self.transaction_type == 'borrow' and self.return_date is None:
+    #         self.return_date = datetime.now()
+    #         self.status = 'completed'
+
+    #         # Calculate fine if overdue
+    #         if self.due_date and datetime.now() > self.due_date:
+    #             days_overdue = (datetime.now().date() -
+    #                             self.due_date.date()).days
+    #             self.fine_amount = days_overdue * 2.00
+
+    #         return True
+    #     return False  # Cannot mark return transactions as returned
+
     def mark_returned(self):
-        """Mark a borrow transaction as returned (only for borrow transactions)"""
-        if self.transaction_type == 'borrow' and self.return_date is None:
-            self.return_date = datetime.now()
-            self.status = 'completed'
+        """
+        Mark a BORROW transaction as returned.
+        This method ONLY works for borrow transactions that are still active.
+        """
+        # Can only mark borrow transactions as returned
+        if self.transaction_type != 'borrow':
+            print("❌ Error: Cannot mark return transactions as returned")
+            return False
 
-            # Calculate fine if overdue
-            if self.due_date and datetime.now() > self.due_date:
-                days_overdue = (datetime.now().date() -
-                                self.due_date.date()).days
-                self.fine_amount = days_overdue * 2.00
+        # Can only mark if not already returned
+        if self.return_date is not None:
+            print("❌ Error: Transaction already returned")
+            return False
 
-            return True
-        return False  # Cannot mark return transactions as returned
+        # Perform the return operation
+        self.return_date = datetime.now()
+        self.status = 'completed'
+
+        # Calculate fine if overdue
+        if self.is_overdue():
+            self.fine_amount = self.calculate_fine()
+            print(f"📝 Overdue fine calculated: ${self.fine_amount:.2f}")
+
+        print("✅ Book successfully marked as returned")
+        return True
 
     def pay_fine(self, amount_paid):
         # Step 1: Check if payment is valid
